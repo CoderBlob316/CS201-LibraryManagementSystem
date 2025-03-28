@@ -4,7 +4,6 @@ import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.List;
 import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -28,19 +27,19 @@ class Book {
         return author;
     }
 
-    public String getcn() {
+    public String getCn() {
         return cn;
     }
 
     @Override
     public String toString() {
-        return "Title: " + title + ", Author: " + author + ", ISBN: " + cn;
+        return "Title: " + title + ", Author: " + author + ", Control Number: " + cn;
     }
 }
 
 public class Library extends JFrame implements ActionListener {
 
-    private List<Book> books = new ArrayList<>();
+    private ArrayList<Book> books = new ArrayList<>(); // Using ArrayList
     private DefaultTableModel bookTableModel;
     private JTable bookTable;
 
@@ -57,7 +56,6 @@ public class Library extends JFrame implements ActionListener {
         setSize(1920, 1080);
         setLocationRelativeTo(null);
 
-        
         JPanel backgroundPanel = new JPanel() {
             private Image backgroundImage;
 
@@ -78,9 +76,8 @@ public class Library extends JFrame implements ActionListener {
                 }
             }
         };
-        backgroundPanel.setBounds(0, 0, 1920, 1080); 
+        backgroundPanel.setBounds(0, 0, 1920, 1080);
         backgroundPanel.setLayout(new BorderLayout(10, 10));
-
 
         JLabel titleLabel = new JLabel("Title:");
         JLabel authorLabel = new JLabel("Author:");
@@ -98,14 +95,23 @@ public class Library extends JFrame implements ActionListener {
         searchButton = new JButton("Search");
         searchButton.addActionListener(this);
 
-        
         String[] columnNames = {"Title", "Author", "Control Number"};
         bookTableModel = new DefaultTableModel(columnNames, 0);
         bookTable = new JTable(bookTableModel);
         JScrollPane tableScrollPane = new JScrollPane(bookTable);
 
-        
+        // Make table and scroll pane transparent
+        bookTable.setOpaque(false);
+        bookTable.setBackground(new Color(0, 0, 0, 0));
+        bookTable.setShowGrid(false);
+        tableScrollPane.setOpaque(false);
+        tableScrollPane.getViewport().setOpaque(false);
+        tableScrollPane.setBorder(BorderFactory.createEmptyBorder());
+
+       
+
         JPanel inputPanel = new JPanel(new GridBagLayout());
+        inputPanel.setOpaque(false);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
@@ -113,27 +119,18 @@ public class Library extends JFrame implements ActionListener {
         gbc.gridx = 0;
         gbc.gridy = 0;
         inputPanel.add(titleLabel, gbc);
-
         gbc.gridx = 1;
-        gbc.gridy = 0;
         inputPanel.add(titleField, gbc);
-
         gbc.gridx = 0;
         gbc.gridy = 1;
         inputPanel.add(authorLabel, gbc);
-
         gbc.gridx = 1;
-        gbc.gridy = 1;
         inputPanel.add(authorField, gbc);
-
         gbc.gridx = 0;
         gbc.gridy = 2;
         inputPanel.add(cnLabel, gbc);
-
         gbc.gridx = 1;
-        gbc.gridy = 2;
         inputPanel.add(cnField, gbc);
-
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 2;
@@ -141,20 +138,21 @@ public class Library extends JFrame implements ActionListener {
         inputPanel.add(addButton, gbc);
 
         JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchPanel.setOpaque(false);
         searchPanel.add(searchLabel);
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
 
         JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
         contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
-        contentPanel.setOpaque(false); 
+        contentPanel.setOpaque(false);
         contentPanel.add(inputPanel, BorderLayout.NORTH);
         contentPanel.add(searchPanel, BorderLayout.CENTER);
         contentPanel.add(tableScrollPane, BorderLayout.SOUTH);
 
-        backgroundPanel.add(contentPanel, BorderLayout.CENTER); 
+        backgroundPanel.add(contentPanel, BorderLayout.CENTER);
 
-        setContentPane(backgroundPanel); 
+        setContentPane(backgroundPanel);
         setVisible(true);
     }
 
@@ -167,14 +165,10 @@ public class Library extends JFrame implements ActionListener {
 
             if (!title.isEmpty() && !author.isEmpty() && !cn.isEmpty()) {
                 Book newBook = new Book(title, author, cn);
-                books.add(newBook);
-                Object[] rowData = {newBook.getTitle(), newBook.getAuthor(), newBook.getcn()};
+                books.add(newBook); // Add to the ArrayList
+                Object[] rowData = {newBook.getTitle(), newBook.getAuthor(), newBook.getCn()};
                 bookTableModel.addRow(rowData);
-
-                // Clear input fields
-                titleField.setText("");
-                authorField.setText("");
-                cnField.setText("");
+                clearInputFields();
             } else {
                 JOptionPane.showMessageDialog(this, "Please fill in all book details.", "Input Error", JOptionPane.ERROR_MESSAGE);
             }
@@ -182,11 +176,11 @@ public class Library extends JFrame implements ActionListener {
             String searchTerm = searchField.getText().trim().toLowerCase();
             bookTableModel.setRowCount(0); // Clear the table
 
-            for (Book book : books) {
+            for (Book book : books) { // Iterate through the ArrayList
                 if (book.getTitle().toLowerCase().contains(searchTerm) ||
                     book.getAuthor().toLowerCase().contains(searchTerm) ||
-                    book.getcn().toLowerCase().contains(searchTerm)) {
-                    Object[] rowData = {book.getTitle(), book.getAuthor(), book.getcn()};
+                    book.getCn().toLowerCase().contains(searchTerm)) {
+                    Object[] rowData = {book.getTitle(), book.getAuthor(), book.getCn()};
                     bookTableModel.addRow(rowData);
                 }
             }
@@ -195,6 +189,12 @@ public class Library extends JFrame implements ActionListener {
                 JOptionPane.showMessageDialog(this, "No books found matching your search.", "Search Results", JOptionPane.INFORMATION_MESSAGE);
             }
         }
+    }
+
+    private void clearInputFields() {
+        titleField.setText("");
+        authorField.setText("");
+        cnField.setText("");
     }
 
     public static void main(String[] args) {
