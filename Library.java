@@ -6,261 +6,203 @@ import java.io.IOException;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.JTableHeader;
 
 class Book {
-    private String title;
-    private String author;
-    private String cn;
+    private String title, author, cn, status;
 
     public Book(String title, String author, String cn) {
         this.title = title;
         this.author = author;
         this.cn = cn;
+        this.status = "Available";
     }
 
-    public String getTitle() {
-        return title;
-    }
+    public String getTitle() { return title; }
+    public String getAuthor() { return author; }
+    public String getCn() { return cn; }
+    public String getStatus() { return status; }
+    public void checkOut() { this.status = "Checked Out"; }
+    public void returnBook() { this.status = "Available"; }
+}
 
-    public String getAuthor() {
-        return author;
-    }
-
-    public String getCn() {
-        return cn;
+class BackgroundPanel extends JPanel {
+    private Image backgroundImage;
+    
+    public BackgroundPanel(String imagePath) {
+        try {
+            backgroundImage = ImageIO.read(new File(imagePath));
+        } catch (IOException e) {
+            System.out.println("Background image not found.");
+        }
     }
 
     @Override
-    public String toString() {
-        return "Title: " + title + ", Author: " + author + ", Control Number: " + cn;
+    protected void paintComponent(Graphics g) {
+        super.paintComponent(g);
+        if (backgroundImage != null) {
+            g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
+        } else {
+            setBackground(Color.DARK_GRAY);
+        }
     }
 }
 
 public class Library extends JFrame implements ActionListener {
-
     private ArrayList<Book> books = new ArrayList<>();
     private DefaultTableModel bookTableModel;
     private JTable bookTable;
-
-    private JTextField titleField;
-    private JTextField authorField;
-    private JTextField cnField;
-    private JButton addButton;
-    private JButton searchButton;
-    private JButton deleteButton;
-    private JTextField searchField;
-    private JTextField deleteField;
+    private JTextField titleField, authorField, cnField, searchField;
+    private JButton addButton, searchButton, deleteButton, checkOutButton, returnButton, sortButton;
 
     public Library() {
         setTitle("Library Management System");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        setSize(1920, 1080);
+        setSize(800, 500);
         setLocationRelativeTo(null);
 
-        JPanel backgroundPanel = new JPanel() {
-            private Image backgroundImage;
+        BackgroundPanel backgroundPanel = new BackgroundPanel("C:\\Users\\ADMIN\\Downloads\\library_bg.jpg");
+        backgroundPanel.setLayout(new BorderLayout());
 
-            {
-                try {
-                    backgroundImage = ImageIO.read(new File("C:\\Users\\babal\\OneDrive\\Pictures\\library bg.jpg"));
-                } catch (IOException e) {
-                    e.printStackTrace();
-                    JOptionPane.showMessageDialog(this, "Error loading background image!", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            }
-
-            @Override
-            protected void paintComponent(Graphics g) {
-                super.paintComponent(g);
-                if (backgroundImage != null) {
-                    g.drawImage(backgroundImage, 0, 0, getWidth(), getHeight(), this);
-                }
-            }
+        bookTableModel = new DefaultTableModel(new String[]{"Title", "Author", "Control Number", "Status"}, 0) {
+            @Override public boolean isCellEditable(int row, int column) { return false; }
         };
-        backgroundPanel.setLayout(new BorderLayout(10, 10));
-
-        JLabel titleLabel = new JLabel("Title:");
-        JLabel authorLabel = new JLabel("Author:");
-        JLabel cnLabel = new JLabel("Control Number:");
-
-        titleField = new JTextField(20);
-        authorField = new JTextField(20);
-        cnField = new JTextField(20);
-
-        addButton = new JButton("Add Book");
-        addButton.addActionListener(this);
-
-        JLabel searchLabel = new JLabel("Search by Title/Author/Control Number:");
-        searchField = new JTextField(20);
-        searchButton = new JButton("Search");
-        searchButton.addActionListener(this);
-
-        JLabel deleteLabel = new JLabel("Delete by Title:");
-        deleteField = new JTextField(20);
-        deleteButton = new JButton("Delete Book");
-        deleteButton.addActionListener(this);
-
-        String[] columnNames = {"Title", "Author", "Control Number"};
-        bookTableModel = new DefaultTableModel(columnNames, 0);
         bookTable = new JTable(bookTableModel);
+        bookTable.setForeground(Color.WHITE);
+        bookTable.setBackground(Color.DARK_GRAY);
+
         JScrollPane tableScrollPane = new JScrollPane(bookTable);
-
-        bookTable.setOpaque(false);
-        bookTable.setBackground(new Color(0, 0, 0, 0));
-        bookTable.setShowGrid(false);
-        tableScrollPane.setOpaque(false);
         tableScrollPane.getViewport().setOpaque(false);
-        tableScrollPane.setBorder(BorderFactory.createEmptyBorder());
 
-        // Set table header text color to white
         JTableHeader header = bookTable.getTableHeader();
-        header.setOpaque(false);
-        header.setBackground(new Color(0, 0, 0, 0));
+        header.setBackground(Color.BLACK);
         header.setForeground(Color.WHITE);
 
-        // Custom cell renderer for white text and transparent background
-        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
-            @Override
-            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-                c.setBackground(new Color(0, 0, 0, 0));
-                c.setForeground(Color.WHITE); // Set text color to white
-                if (isSelected) {
-                    c.setForeground(table.getSelectionForeground()); // Keep selection foreground
-                }
-                return c;
-            }
-        };
-        for (int i = 0; i < bookTable.getColumnCount(); i++) {
-            bookTable.getColumnModel().getColumn(i).setCellRenderer(renderer);
-        }
+        titleField = new JTextField(15);
+        authorField = new JTextField(15);
+        cnField = new JTextField(15);
+        searchField = new JTextField(15);
 
-        JPanel inputPanel = new JPanel(new GridBagLayout());
+        addButton = new JButton("Add Book");
+        searchButton = new JButton("Search");
+        deleteButton = new JButton("Delete");
+        checkOutButton = new JButton("Check Out");
+        returnButton = new JButton("Return");
+        sortButton = new JButton("Sort by Title");
+
+        addButton.addActionListener(this);
+        searchButton.addActionListener(this);
+        deleteButton.addActionListener(this);
+        checkOutButton.addActionListener(this);
+        returnButton.addActionListener(this);
+        sortButton.addActionListener(this);
+
+        JPanel inputPanel = new JPanel();
         inputPanel.setOpaque(false);
-        GridBagConstraints gbc = new GridBagConstraints();
-        gbc.insets = new Insets(5, 5, 5, 5);
-        gbc.fill = GridBagConstraints.HORIZONTAL;
+        inputPanel.add(new JLabel("Title:")); inputPanel.add(titleField);
+        inputPanel.add(new JLabel("Author:")); inputPanel.add(authorField);
+        inputPanel.add(new JLabel("Control Number:")); inputPanel.add(cnField);
+        inputPanel.add(addButton);
 
-        gbc.gridx = 0;
-        gbc.gridy = 0;
-        inputPanel.add(titleLabel, gbc);
-        gbc.gridx = 1;
-        inputPanel.add(titleField, gbc);
-        gbc.gridx = 0;
-        gbc.gridy = 1;
-        inputPanel.add(authorLabel, gbc);
-        gbc.gridx = 1;
-        inputPanel.add(authorField, gbc);
-        gbc.gridx = 0;
-        gbc.gridy = 2;
-        inputPanel.add(cnLabel, gbc);
-        gbc.gridx = 1;
-        inputPanel.add(cnField, gbc);
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 2;
-        gbc.anchor = GridBagConstraints.CENTER;
-        inputPanel.add(addButton, gbc);
+        JPanel actionPanel = new JPanel();
+        actionPanel.setOpaque(false);
+        actionPanel.add(checkOutButton);
+        actionPanel.add(returnButton);
+        actionPanel.add(deleteButton);
+        actionPanel.add(sortButton);
 
-        JPanel searchPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        JPanel searchPanel = new JPanel();
         searchPanel.setOpaque(false);
-        searchPanel.add(searchLabel);
+        searchPanel.add(new JLabel("Search:"));
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
 
-        JPanel deletePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        deletePanel.setOpaque(false);
-        deletePanel.add(deleteLabel);
-        deletePanel.add(deleteField);
-        deletePanel.add(deleteButton);
-
-        // Create a new panel to hold searchPanel and deletePanel
-        JPanel searchDeletePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        searchDeletePanel.setOpaque(false);
-        searchDeletePanel.add(searchPanel);
-        searchDeletePanel.add(deletePanel);
-
-        JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
-        contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JPanel contentPanel = new JPanel(new BorderLayout());
         contentPanel.setOpaque(false);
         contentPanel.add(inputPanel, BorderLayout.NORTH);
-        contentPanel.add(searchDeletePanel, BorderLayout.CENTER); // Added the combined panel
-        contentPanel.add(tableScrollPane, BorderLayout.SOUTH);
+        contentPanel.add(searchPanel, BorderLayout.CENTER);
+        contentPanel.add(actionPanel, BorderLayout.SOUTH);
+        contentPanel.add(tableScrollPane, BorderLayout.EAST);
 
         backgroundPanel.add(contentPanel, BorderLayout.CENTER);
-
         setContentPane(backgroundPanel);
         setVisible(true);
     }
 
     @Override
     public void actionPerformed(ActionEvent e) {
-        if (e.getSource() == addButton) {
-            String title = titleField.getText().trim();
-            String author = authorField.getText().trim();
-            String cn = cnField.getText().trim();
+        if (e.getSource() == addButton) addBook();
+        else if (e.getSource() == searchButton) searchBook();
+        else if (e.getSource() == deleteButton) deleteBook();
+        else if (e.getSource() == checkOutButton) checkOutBook();
+        else if (e.getSource() == returnButton) returnBook();
+    }
 
-            if (!title.isEmpty() && !author.isEmpty() && !cn.isEmpty()) {
-                Book newBook = new Book(title, author, cn);
-                books.add(newBook);
-                Object[] rowData = {newBook.getTitle(), newBook.getAuthor(), newBook.getCn()};
-                bookTableModel.addRow(rowData);
-                clearInputFields();
-            } else {
-                JOptionPane.showMessageDialog(this, "Please fill in all book details.", "Input Error", JOptionPane.ERROR_MESSAGE);
+    private void addBook() {
+        String title = titleField.getText().trim();
+        String author = authorField.getText().trim();
+        String cn = cnField.getText().trim();
+        if (title.isEmpty() || author.isEmpty() || cn.isEmpty()) return;
+        for (Book book : books) {
+            if (book.getCn().equals(cn) || (book.getTitle().equalsIgnoreCase(title) && book.getAuthor().equalsIgnoreCase(author))) return;
+        }
+        books.add(new Book(title, author, cn));
+        sortBooks();
+        refreshTable();
+    }
+
+    private void sortBooks() {
+        for (int i = 1; i < books.size(); i++) {
+            Book key = books.get(i);
+            int j = i - 1;
+            while (j >= 0 && books.get(j).getTitle().compareToIgnoreCase(key.getTitle()) > 0) {
+                books.set(j + 1, books.get(j));
+                j--;
             }
-        } else if (e.getSource() == searchButton) {
-            String searchTerm = searchField.getText().trim().toLowerCase();
-            bookTableModel.setRowCount(0);
+            books.set(j + 1, key);
+        }
+    }
 
-            for (Book book : books) {
-                if (book.getTitle().toLowerCase().contains(searchTerm) ||
-                    book.getAuthor().toLowerCase().contains(searchTerm) ||
-                    book.getCn().toLowerCase().contains(searchTerm)) {
-                    Object[] rowData = {book.getTitle(), book.getAuthor(), book.getCn()};
-                    bookTableModel.addRow(rowData);
-                }
-            }
-
-            if (bookTableModel.getRowCount() == 0) {
-                JOptionPane.showMessageDialog(this, "No books found matching your search.", "Search Results", JOptionPane.INFORMATION_MESSAGE);
-            }
-        } else if (e.getSource() == deleteButton) {
-            String deleteTitle = deleteField.getText().trim().toLowerCase();
-
-            if (!deleteTitle.isEmpty()) {
-                boolean found = false;
-                for (int i = 0; i < books.size(); i++) {
-                    if (books.get(i).getTitle().toLowerCase().equals(deleteTitle)) {
-                        books.remove(i);
-                        bookTableModel.removeRow(i);
-                        found = true;
-                        break;
-                    }
-                }
-
-                if (found) {
-                    JOptionPane.showMessageDialog(this, "Book deleted successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
-                } else {
-                    JOptionPane.showMessageDialog(this, "Book not found!", "Error", JOptionPane.ERROR_MESSAGE);
-                }
-            } else {
-                JOptionPane.showMessageDialog(this, "Enter a title to delete!", "Error", JOptionPane.ERROR_MESSAGE);
+    private void searchBook() {
+        String query = searchField.getText().trim().toLowerCase();
+        bookTableModel.setRowCount(0);
+        for (Book book : books) {
+            if (book.getTitle().toLowerCase().contains(query) || book.getAuthor().toLowerCase().contains(query)) {
+                bookTableModel.addRow(new Object[]{book.getTitle(), book.getAuthor(), book.getCn(), book.getStatus()});
             }
         }
     }
 
-    private void clearInputFields() {
-        titleField.setText("");
-        authorField.setText("");
-        cnField.setText("");
-        deleteField.setText("");
+        private void deleteBook() {
+        int row = bookTable.getSelectedRow();
+        if (row == -1) return;
+        books.remove(row);
+        refreshTable();
+    }
+
+    private void checkOutBook() {
+        int row = bookTable.getSelectedRow();
+        if (row == -1) return;
+        books.get(row).checkOut();
+        refreshTable();
+    }
+
+    private void returnBook() {
+        int row = bookTable.getSelectedRow();
+        if (row == -1) return;
+        books.get(row).returnBook();
+        refreshTable();
+    }
+
+    private void refreshTable() {
+        bookTableModel.setRowCount(0);
+        for (Book book : books) {
+            bookTableModel.addRow(new Object[]{book.getTitle(), book.getAuthor(), book.getCn(), book.getStatus()});
+        }
     }
 
     public static void main(String[] args) {
-        SwingUtilities.invokeLater(() -> new Library());
+        SwingUtilities.invokeLater(Library::new);
     }
 }
