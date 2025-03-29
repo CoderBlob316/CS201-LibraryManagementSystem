@@ -39,7 +39,7 @@ class Book {
 
 public class Library extends JFrame implements ActionListener {
 
-    private ArrayList<Book> books = new ArrayList<>(); // Using ArrayList
+    private ArrayList<Book> books = new ArrayList<>();
     private DefaultTableModel bookTableModel;
     private JTable bookTable;
 
@@ -49,6 +49,8 @@ public class Library extends JFrame implements ActionListener {
     private JButton addButton;
     private JButton searchButton;
     private JTextField searchField;
+    private JButton sortByTitleButton;
+    private JButton sortByAuthorButton;
 
     public Library() {
         setTitle("Library Management System");
@@ -95,6 +97,11 @@ public class Library extends JFrame implements ActionListener {
         searchButton = new JButton("Search");
         searchButton.addActionListener(this);
 
+        sortByTitleButton = new JButton("Sort by Title");
+        sortByTitleButton.addActionListener(this);
+        sortByAuthorButton = new JButton("Sort by Author");
+        sortByAuthorButton.addActionListener(this);
+
         String[] columnNames = {"Title", "Author", "Control Number"};
         bookTableModel = new DefaultTableModel(columnNames, 0);
         bookTable = new JTable(bookTableModel);
@@ -107,8 +114,6 @@ public class Library extends JFrame implements ActionListener {
         tableScrollPane.setOpaque(false);
         tableScrollPane.getViewport().setOpaque(false);
         tableScrollPane.setBorder(BorderFactory.createEmptyBorder());
-
-       
 
         JPanel inputPanel = new JPanel(new GridBagLayout());
         inputPanel.setOpaque(false);
@@ -143,12 +148,18 @@ public class Library extends JFrame implements ActionListener {
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
 
+        JPanel sortPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        sortPanel.setOpaque(false);
+        sortPanel.add(sortByTitleButton);
+        sortPanel.add(sortByAuthorButton);
+
         JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
         contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         contentPanel.setOpaque(false);
         contentPanel.add(inputPanel, BorderLayout.NORTH);
         contentPanel.add(searchPanel, BorderLayout.CENTER);
-        contentPanel.add(tableScrollPane, BorderLayout.SOUTH);
+        contentPanel.add(sortPanel, BorderLayout.SOUTH);
+        contentPanel.add(tableScrollPane, BorderLayout.AFTER_LAST_LINE);
 
         backgroundPanel.add(contentPanel, BorderLayout.CENTER);
 
@@ -165,7 +176,7 @@ public class Library extends JFrame implements ActionListener {
 
             if (!title.isEmpty() && !author.isEmpty() && !cn.isEmpty()) {
                 Book newBook = new Book(title, author, cn);
-                books.add(newBook); // Add to the ArrayList
+                books.add(newBook);
                 Object[] rowData = {newBook.getTitle(), newBook.getAuthor(), newBook.getCn()};
                 bookTableModel.addRow(rowData);
                 clearInputFields();
@@ -174,9 +185,9 @@ public class Library extends JFrame implements ActionListener {
             }
         } else if (e.getSource() == searchButton) {
             String searchTerm = searchField.getText().trim().toLowerCase();
-            bookTableModel.setRowCount(0); // Clear the table
+            bookTableModel.setRowCount(0);
 
-            for (Book book : books) { // Iterate through the ArrayList
+            for (Book book : books) {
                 if (book.getTitle().toLowerCase().contains(searchTerm) ||
                     book.getAuthor().toLowerCase().contains(searchTerm) ||
                     book.getCn().toLowerCase().contains(searchTerm)) {
@@ -188,6 +199,12 @@ public class Library extends JFrame implements ActionListener {
             if (bookTableModel.getRowCount() == 0) {
                 JOptionPane.showMessageDialog(this, "No books found matching your search.", "Search Results", JOptionPane.INFORMATION_MESSAGE);
             }
+        } else if (e.getSource() == sortByTitleButton) {
+            mergeSort(books, "title");
+            updateTable();
+        } else if (e.getSource() == sortByAuthorButton) {
+            mergeSort(books, "author");
+            updateTable();
         }
     }
 
@@ -195,6 +212,48 @@ public class Library extends JFrame implements ActionListener {
         titleField.setText("");
         authorField.setText("");
         cnField.setText("");
+    }
+
+    private void mergeSort(ArrayList<Book> books, String sortBy) {
+        if (books.size() > 1) {
+            int mid = books.size() / 2;
+            ArrayList<Book> left = new ArrayList<>(books.subList(0, mid));
+            ArrayList<Book> right = new ArrayList<>(books.subList(mid, books.size()));
+
+            mergeSort(left, sortBy);
+            mergeSort(right, sortBy);
+
+            merge(books, left, right, sortBy);
+        }
+    }
+
+    private void merge(ArrayList<Book> books, ArrayList<Book> left, ArrayList<Book> right, String sortBy) {
+        int i = 0, j = 0, k = 0;
+
+        while (i < left.size() && j < right.size()) {
+            if (sortBy.equals("title") && left.get(i).getTitle().compareToIgnoreCase(right.get(j).getTitle()) <= 0 ||
+                sortBy.equals("author") && left.get(i).getAuthor().compareToIgnoreCase(right.get(j).getAuthor()) <= 0) {
+                books.set(k++, left.get(i++));
+            } else {
+                books.set(k++, right.get(j++));
+            }
+        }
+
+        while (i < left.size()) {
+            books.set(k++, left.get(i++));
+        }
+
+        while (j < right.size()) {
+            books.set(k++, right.get(j++));
+        }
+    }
+
+    private void updateTable() {
+        bookTableModel.setRowCount(0);
+        for (Book book : books) {
+            Object[] rowData = {book.getTitle(), book.getAuthor(), book.getCn()};
+            bookTableModel.addRow(rowData);
+        }
     }
 
     public static void main(String[] args) {
