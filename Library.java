@@ -6,7 +6,9 @@ import java.io.IOException;
 import java.util.ArrayList;
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.DefaultTableModel;
+import javax.swing.table.JTableHeader;
 
 class Book {
     private String title;
@@ -48,9 +50,9 @@ public class Library extends JFrame implements ActionListener {
     private JTextField cnField;
     private JButton addButton;
     private JButton searchButton;
+    private JButton deleteButton;
     private JTextField searchField;
-    private JButton sortByTitleButton;
-    private JButton sortByAuthorButton;
+    private JTextField deleteField;
 
     public Library() {
         setTitle("Library Management System");
@@ -63,7 +65,7 @@ public class Library extends JFrame implements ActionListener {
 
             {
                 try {
-                    backgroundImage = ImageIO.read(new File("assets\\library bg.jpg"));
+                    backgroundImage = ImageIO.read(new File("C:\\Users\\babal\\OneDrive\\Pictures\\library bg.jpg"));
                 } catch (IOException e) {
                     e.printStackTrace();
                     JOptionPane.showMessageDialog(this, "Error loading background image!", "Error", JOptionPane.ERROR_MESSAGE);
@@ -78,7 +80,6 @@ public class Library extends JFrame implements ActionListener {
                 }
             }
         };
-        backgroundPanel.setBounds(0, 0, 1920, 1080);
         backgroundPanel.setLayout(new BorderLayout(10, 10));
 
         JLabel titleLabel = new JLabel("Title:");
@@ -97,23 +98,45 @@ public class Library extends JFrame implements ActionListener {
         searchButton = new JButton("Search");
         searchButton.addActionListener(this);
 
-        sortByTitleButton = new JButton("Sort by Title");
-        sortByTitleButton.addActionListener(this);
-        sortByAuthorButton = new JButton("Sort by Author");
-        sortByAuthorButton.addActionListener(this);
+        JLabel deleteLabel = new JLabel("Delete by Title:");
+        deleteField = new JTextField(20);
+        deleteButton = new JButton("Delete Book");
+        deleteButton.addActionListener(this);
 
         String[] columnNames = {"Title", "Author", "Control Number"};
         bookTableModel = new DefaultTableModel(columnNames, 0);
         bookTable = new JTable(bookTableModel);
         JScrollPane tableScrollPane = new JScrollPane(bookTable);
 
-        // Make table and scroll pane transparent
         bookTable.setOpaque(false);
         bookTable.setBackground(new Color(0, 0, 0, 0));
         bookTable.setShowGrid(false);
         tableScrollPane.setOpaque(false);
         tableScrollPane.getViewport().setOpaque(false);
         tableScrollPane.setBorder(BorderFactory.createEmptyBorder());
+
+        // Set table header text color to white
+        JTableHeader header = bookTable.getTableHeader();
+        header.setOpaque(false);
+        header.setBackground(new Color(0, 0, 0, 0));
+        header.setForeground(Color.WHITE);
+
+        // Custom cell renderer for white text and transparent background
+        DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
+            @Override
+            public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
+                Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
+                c.setBackground(new Color(0, 0, 0, 0));
+                c.setForeground(Color.WHITE); // Set text color to white
+                if (isSelected) {
+                    c.setForeground(table.getSelectionForeground()); // Keep selection foreground
+                }
+                return c;
+            }
+        };
+        for (int i = 0; i < bookTable.getColumnCount(); i++) {
+            bookTable.getColumnModel().getColumn(i).setCellRenderer(renderer);
+        }
 
         JPanel inputPanel = new JPanel(new GridBagLayout());
         inputPanel.setOpaque(false);
@@ -148,18 +171,24 @@ public class Library extends JFrame implements ActionListener {
         searchPanel.add(searchField);
         searchPanel.add(searchButton);
 
-        JPanel sortPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        sortPanel.setOpaque(false);
-        sortPanel.add(sortByTitleButton);
-        sortPanel.add(sortByAuthorButton);
+        JPanel deletePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        deletePanel.setOpaque(false);
+        deletePanel.add(deleteLabel);
+        deletePanel.add(deleteField);
+        deletePanel.add(deleteButton);
+
+        // Create a new panel to hold searchPanel and deletePanel
+        JPanel searchDeletePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        searchDeletePanel.setOpaque(false);
+        searchDeletePanel.add(searchPanel);
+        searchDeletePanel.add(deletePanel);
 
         JPanel contentPanel = new JPanel(new BorderLayout(10, 10));
         contentPanel.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
         contentPanel.setOpaque(false);
         contentPanel.add(inputPanel, BorderLayout.NORTH);
-        contentPanel.add(searchPanel, BorderLayout.CENTER);
-        contentPanel.add(sortPanel, BorderLayout.SOUTH);
-        contentPanel.add(tableScrollPane, BorderLayout.AFTER_LAST_LINE);
+        contentPanel.add(searchDeletePanel, BorderLayout.CENTER); // Added the combined panel
+        contentPanel.add(tableScrollPane, BorderLayout.SOUTH);
 
         backgroundPanel.add(contentPanel, BorderLayout.CENTER);
 
@@ -199,12 +228,28 @@ public class Library extends JFrame implements ActionListener {
             if (bookTableModel.getRowCount() == 0) {
                 JOptionPane.showMessageDialog(this, "No books found matching your search.", "Search Results", JOptionPane.INFORMATION_MESSAGE);
             }
-        } else if (e.getSource() == sortByTitleButton) {
-            mergeSort(books, "title");
-            updateTable();
-        } else if (e.getSource() == sortByAuthorButton) {
-            mergeSort(books, "author");
-            updateTable();
+        } else if (e.getSource() == deleteButton) {
+            String deleteTitle = deleteField.getText().trim().toLowerCase();
+
+            if (!deleteTitle.isEmpty()) {
+                boolean found = false;
+                for (int i = 0; i < books.size(); i++) {
+                    if (books.get(i).getTitle().toLowerCase().equals(deleteTitle)) {
+                        books.remove(i);
+                        bookTableModel.removeRow(i);
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (found) {
+                    JOptionPane.showMessageDialog(this, "Book deleted successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+                } else {
+                    JOptionPane.showMessageDialog(this, "Book not found!", "Error", JOptionPane.ERROR_MESSAGE);
+                }
+            } else {
+                JOptionPane.showMessageDialog(this, "Enter a title to delete!", "Error", JOptionPane.ERROR_MESSAGE);
+            }
         }
     }
 
@@ -212,48 +257,7 @@ public class Library extends JFrame implements ActionListener {
         titleField.setText("");
         authorField.setText("");
         cnField.setText("");
-    }
-
-    private void mergeSort(ArrayList<Book> books, String sortBy) {
-        if (books.size() > 1) {
-            int mid = books.size() / 2;
-            ArrayList<Book> left = new ArrayList<>(books.subList(0, mid));
-            ArrayList<Book> right = new ArrayList<>(books.subList(mid, books.size()));
-
-            mergeSort(left, sortBy);
-            mergeSort(right, sortBy);
-
-            merge(books, left, right, sortBy);
-        }
-    }
-
-    private void merge(ArrayList<Book> books, ArrayList<Book> left, ArrayList<Book> right, String sortBy) {
-        int i = 0, j = 0, k = 0;
-
-        while (i < left.size() && j < right.size()) {
-            if (sortBy.equals("title") && left.get(i).getTitle().compareToIgnoreCase(right.get(j).getTitle()) <= 0 ||
-                sortBy.equals("author") && left.get(i).getAuthor().compareToIgnoreCase(right.get(j).getAuthor()) <= 0) {
-                books.set(k++, left.get(i++));
-            } else {
-                books.set(k++, right.get(j++));
-            }
-        }
-
-        while (i < left.size()) {
-            books.set(k++, left.get(i++));
-        }
-
-        while (j < right.size()) {
-            books.set(k++, right.get(j++));
-        }
-    }
-
-    private void updateTable() {
-        bookTableModel.setRowCount(0);
-        for (Book book : books) {
-            Object[] rowData = {book.getTitle(), book.getAuthor(), book.getCn()};
-            bookTableModel.addRow(rowData);
-        }
+        deleteField.setText("");
     }
 
     public static void main(String[] args) {
